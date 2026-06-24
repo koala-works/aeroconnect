@@ -535,7 +535,7 @@
         <div class="page-title">Profile</div>
         <div class="page-subtitle">Your account details and verification status</div>
       </div></div>
-      <div class="profile-grid">
+      <div class="profile-grid" style="grid-template-columns:1fr; max-width:560px;">
         <div class="card">
           <div class="profile-section-title">Account Details</div>
           <div class="profile-row"><span class="profile-field-name">Full Name</span><span class="profile-field-value" id="prof-name">—</span></div>
@@ -543,16 +543,6 @@
           <div class="profile-row"><span class="profile-field-name">Home Airport</span><span class="profile-field-value" id="prof-airport">—</span></div>
           <div id="prof-ratings-row" class="profile-row" style="display:none"><span class="profile-field-name">Aircraft Ratings</span><span class="profile-field-value" id="prof-ratings" style="text-align:right">—</span></div>
           <div class="profile-row"><span class="profile-field-name">Member Since</span><span class="profile-field-value" id="prof-since">—</span></div>
-        </div>
-        <div class="card">
-          <div class="profile-section-title">Verification Status</div>
-          <div class="verification-row"><span class="ver-icon">✉️</span><span class="ver-label">Email Address</span><span class="ver-status ver-pending">Pending</span></div>
-          <div class="verification-row" id="cert-row"><span class="ver-icon">📋</span><span class="ver-label">Pilot Certificate</span><span class="ver-status ver-pending">Not submitted</span></div>
-          <div class="verification-row" id="medical-row"><span class="ver-icon">🩺</span><span class="ver-label">Medical Certificate</span><span class="ver-status ver-pending">Not submitted</span></div>
-          <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
-            <p style="font-size:12px;color:var(--text-2);line-height:1.6;">Complete verification to unlock full access to pilot requests and trip bookings.</p>
-            <button class="btn btn-primary" style="margin-top:12px;font-size:12px;padding:8px 16px;" onclick="showToast('Verification flow coming soon')">Start Verification</button>
-          </div>
         </div>
       </div>
     </div>
@@ -751,8 +741,6 @@ function enterApp() {
   document.getElementById('nav-inbox').style.display = owner ? 'none' : '';
   document.getElementById('nav-availability').style.display = owner ? 'none' : '';
   document.getElementById('dash-cta').style.display = owner ? '' : 'none';
-  document.getElementById('cert-row').style.display = owner ? 'none' : 'flex';
-  document.getElementById('medical-row').style.display = owner ? 'none' : 'flex';
 
   populateProfile();
   document.getElementById('onboarding').classList.add('hidden');
