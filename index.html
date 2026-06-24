@@ -287,12 +287,25 @@
         <div class="ob-input-group">
           <label class="ob-input-label">Aircraft Ratings (pick at least one)</label>
           <div class="checkbox-group" id="ratings-group">
+            <div class="check-chip" onclick="toggleRating(this)" data-val="C152">C152</div>
             <div class="check-chip" onclick="toggleRating(this)" data-val="C172">C172</div>
-            <div class="check-chip" onclick="toggleRating(this)" data-val="PA28">PA28</div>
-            <div class="check-chip" onclick="toggleRating(this)" data-val="BE36">BE36</div>
-            <div class="check-chip" onclick="toggleRating(this)" data-val="PC12">PC12</div>
-            <div class="check-chip" onclick="toggleRating(this)" data-val="SR22">SR22</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="C182">C182</div>
             <div class="check-chip" onclick="toggleRating(this)" data-val="C208">C208</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="PA28">PA28</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="PA32">PA32</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="PA44">PA44</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="SR20">SR20</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="SR22">SR22</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="BE36">BE36</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="BE58">BE58</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="DA40">DA40</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="DA42">DA42</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="M20P">M20P</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="PC12">PC12</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="TBM9">TBM9</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="B350">B350</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="C25A">C25A</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="E55P">E55P</div>
           </div>
           <p style="font-size:12px;color:#7A94AE;margin-top:14px;line-height:1.5;">You'll post your availability (dates &amp; how far you'll travel) inside the app once you're in — and update it anytime.</p>
         </div>
@@ -389,11 +402,34 @@
         <div class="form-grid">
           <div class="form-group">
             <label class="form-label">Aircraft Type</label>
-            <select class="form-select" id="req-aircraft">
+            <select class="form-select" id="req-aircraft" onchange="toggleAircraftOther()">
               <option value="">Select aircraft…</option>
-              <option>C172</option><option>PA28</option><option>BE36</option>
-              <option>PC12</option><option>SR22</option><option>C208</option>
+              <option value="C152">C152 — Cessna 152</option>
+              <option value="C172">C172 — Cessna 172 Skyhawk</option>
+              <option value="C182">C182 — Cessna 182 Skylane</option>
+              <option value="C208">C208 — Cessna 208 Caravan</option>
+              <option value="PA28">PA28 — Piper Archer / Cherokee</option>
+              <option value="PA32">PA32 — Piper Saratoga</option>
+              <option value="PA44">PA44 — Piper Seminole</option>
+              <option value="SR20">SR20 — Cirrus SR20</option>
+              <option value="SR22">SR22 — Cirrus SR22</option>
+              <option value="BE36">BE36 — Beechcraft Bonanza</option>
+              <option value="BE58">BE58 — Beechcraft Baron</option>
+              <option value="DA40">DA40 — Diamond DA40</option>
+              <option value="DA42">DA42 — Diamond DA42</option>
+              <option value="M20P">M20P — Mooney M20</option>
+              <option value="PC12">PC12 — Pilatus PC-12</option>
+              <option value="TBM9">TBM9 — Daher TBM 900</option>
+              <option value="B350">B350 — Beechcraft King Air 350</option>
+              <option value="C25A">C25A — Cessna Citation CJ2</option>
+              <option value="E55P">E55P — Embraer Phenom 300</option>
+              <option value="OTHER">Other (type it in)…</option>
             </select>
+          </div>
+          <div class="form-group full" id="req-aircraft-other-group" style="display:none;">
+            <label class="form-label">Aircraft (manual entry)</label>
+            <input class="form-input mono" id="req-aircraft-other" placeholder="e.g. RV-10, Boeing 737, Robinson R44…" maxlength="40">
+            <span class="form-hint">Type the make/model or ICAO code. Pilots must be rated for it to match.</span>
           </div>
           <div class="form-group">
             <label class="form-label">Departure Airport</label>
@@ -511,7 +547,6 @@
         <div class="card">
           <div class="profile-section-title">Verification Status</div>
           <div class="verification-row"><span class="ver-icon">✉️</span><span class="ver-label">Email Address</span><span class="ver-status ver-pending">Pending</span></div>
-          <div class="verification-row"><span class="ver-icon">🪪</span><span class="ver-label">Government ID</span><span class="ver-status ver-pending">Not submitted</span></div>
           <div class="verification-row" id="cert-row"><span class="ver-icon">📋</span><span class="ver-label">Pilot Certificate</span><span class="ver-status ver-pending">Not submitted</span></div>
           <div class="verification-row" id="medical-row"><span class="ver-icon">🩺</span><span class="ver-label">Medical Certificate</span><span class="ver-status ver-pending">Not submitted</span></div>
           <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
@@ -858,8 +893,16 @@ function clearFilters() {
 // ════════════════════════════════════════════════════════════
 // NEW REQUEST + MATCHING (owners)
 // ════════════════════════════════════════════════════════════
+function toggleAircraftOther() {
+  const isOther = document.getElementById('req-aircraft').value === 'OTHER';
+  document.getElementById('req-aircraft-other-group').style.display = isOther ? 'flex' : 'none';
+}
+
 async function submitRequest() {
-  const aircraft = document.getElementById('req-aircraft').value;
+  const sel = document.getElementById('req-aircraft').value;
+  const aircraft = sel === 'OTHER'
+    ? document.getElementById('req-aircraft-other').value.trim().toUpperCase()
+    : sel;
   const airport = document.getElementById('req-airport').value.trim().toUpperCase();
   const date = document.getElementById('req-date').value;
   const tripName = document.getElementById('req-name').value.trim() || `${aircraft} trip from ${airport}`;
@@ -984,7 +1027,8 @@ function renderMatches(results, req) {
 }
 
 function clearRequest() {
-  ['req-aircraft','req-airport','req-name','req-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['req-aircraft','req-aircraft-other','req-airport','req-name','req-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('req-aircraft-other-group').style.display = 'none';
 }
 
 // ════════════════════════════════════════════════════════════
