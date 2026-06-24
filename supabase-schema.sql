@@ -89,12 +89,43 @@ drop policy if exists "involved updates connections" on public.connections;
 create policy "involved updates connections" on public.connections
   for update to authenticated using (auth.uid() = owner_id or auth.uid() = pilot_id);
 
+-- ---------- AVAILABILITIES (pilot-managed slots, TaskRabbit-style) ----------
+-- Pilots post availability on an ongoing basis: from which airport, how far
+-- they'll travel, and the date window. A pilot can have many of these.
+create table if not exists public.availabilities (
+  id            uuid primary key default gen_random_uuid(),
+  pilot_id      uuid not null references public.profiles(id) on delete cascade,
+  airport       text not null,
+  range_nm      int not null,
+  available_from date not null,
+  available_to   date not null,
+  created_at    timestamptz not null default now()
+);
+alter table public.availabilities enable row level security;
+
+drop policy if exists "read availabilities" on public.availabilities;
+create policy "read availabilities" on public.availabilities
+  for select to authenticated using (true);
+
+drop policy if exists "pilot insert availability" on public.availabilities;
+create policy "pilot insert availability" on public.availabilities
+  for insert to authenticated with check (auth.uid() = pilot_id);
+
+drop policy if exists "pilot update availability" on public.availabilities;
+create policy "pilot update availability" on public.availabilities
+  for update to authenticated using (auth.uid() = pilot_id);
+
+drop policy if exists "pilot delete availability" on public.availabilities;
+create policy "pilot delete availability" on public.availabilities
+  for delete to authenticated using (auth.uid() = pilot_id);
+
 -- ============================================================
 -- REALTIME — let all laptops receive live changes
 -- ============================================================
 alter publication supabase_realtime add table public.profiles;
 alter publication supabase_realtime add table public.requests;
 alter publication supabase_realtime add table public.connections;
+alter publication supabase_realtime add table public.availabilities;
 
 -- Done. Next: turn OFF "Confirm email" in Authentication → Providers → Email,
 -- then paste your Project URL + anon key into AeroConnect.html.
