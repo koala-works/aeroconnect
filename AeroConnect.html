@@ -720,6 +720,18 @@ async function doSignOut() {
   location.reload();
 }
 
+// Returns the current authenticated user, refreshing an expired session if possible.
+// Prevents writes from silently running as the logged-out role (which RLS rejects).
+async function ensureSession() {
+  try {
+    let { data: { user } } = await sb.auth.getUser();
+    if (user) return user;
+    const { data, error } = await sb.auth.refreshSession();
+    if (!error && data && data.user) return data.user;
+  } catch (e) {}
+  return null;
+}
+
 // ════════════════════════════════════════════════════════════
 // ENTER APP / ROLE GATING
 // ════════════════════════════════════════════════════════════
@@ -897,8 +909,11 @@ async function submitRequest() {
   const notes = document.getElementById('req-notes').value.trim();
   if (!aircraft || !airport || !date) { showToast('Please fill in aircraft, airport, and date.'); return; }
 
+  const user = await ensureSession();
+  if (!user) { showToast('Your session expired — please sign out and sign back in.'); return; }
+
   const { data, error } = await sb.from('requests').insert({
-    owner_id: state.profile.id, aircraft, airport, trip_date: date, trip_name: tripName, notes
+    owner_id: user.id, aircraft, airport, trip_date: date, trip_name: tripName, notes
   }).select().single();
   if (error) { showToast('Could not save request: ' + error.message); return; }
 
@@ -959,8 +974,10 @@ function connectionFor(pilotId) {
 
 async function connectToPilot(pilotId) {
   if (!state.lastRequest) return;
+  const user = await ensureSession();
+  if (!user) { showToast('Your session expired — please sign out and sign back in.'); return; }
   const { error } = await sb.from('connections').insert({
-    request_id: state.lastRequest.id, owner_id: state.profile.id, pilot_id: pilotId, status: 'pending'
+    request_id: state.lastRequest.id, owner_id: user.id, pilot_id: pilotId, status: 'pending'
   });
   if (error) { showToast('Could not send: ' + error.message); return; }
   showToast('Connection request sent to the pilot.');
@@ -1071,6 +1088,8 @@ function renderInbox() {
 }
 
 async function respondConnection(connId, status) {
+  const user = await ensureSession();
+  if (!user) { showToast('Your session expired — please sign out and sign back in.'); return; }
   const { error } = await sb.from('connections').update({ status }).eq('id', connId);
   if (error) { showToast('Could not update: ' + error.message); return; }
   // also mark the request fulfilled if accepted
@@ -1117,8 +1136,10 @@ async function addAvailability() {
   const to = document.getElementById('av-to').value;
   if (!airport || !range || range < 10 || !from || !to) { showToast('Fill in airport, range, and both dates.'); return; }
   if (from > to) { showToast('The "from" date must be on or before the "to" date.'); return; }
+  const user = await ensureSession();
+  if (!user) { showToast('Your session expired — please sign out and sign back in.'); return; }
   const { error } = await sb.from('availabilities').insert({
-    pilot_id: state.profile.id, airport, range_nm: range, available_from: from, available_to: to
+    pilot_id: user.id, airport, range_nm: range, available_from: from, available_to: to
   });
   if (error) { showToast('Could not save: ' + error.message); return; }
   document.getElementById('av-range').value = '';
@@ -1129,6 +1150,8 @@ async function addAvailability() {
 }
 
 async function deleteAvailability(id) {
+  const user = await ensureSession();
+  if (!user) { showToast('Your session expired — please sign out and sign back in.'); return; }
   const { error } = await sb.from('availabilities').delete().eq('id', id);
   if (error) { showToast('Could not remove: ' + error.message); return; }
   showToast('Availability removed.');
