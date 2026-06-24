@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AeroConnect</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0F1923; --navy-mid: #172130; --navy-border: #1E2E40;
+    --accent: #0EA5E9; --accent-dim: #0C8FC9; --accent-glow: rgba(14,165,233,0.12);
+    --amber: #F59E0B; --green: #10B981; --red: #EF4444;
+    --bg: #F0F4F8; --card: #FFFFFF; --text: #0F172A; --text-2: #475569; --text-3: #94A3B8;
+    --border: #E2E8F0; --mono: 'JetBrains Mono', monospace; --sans: 'Inter', sans-serif;
+    --radius: 10px; --radius-sm: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 2px 8px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05);
+  }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; overflow: hidden; }
+
+  /* ── ONBOARDING / AUTH ── */
+  #onboarding { position: fixed; inset: 0; background: var(--navy); display: flex; align-items: center; justify-content: center; z-index: 1000; transition: opacity 0.4s ease; }
+  #onboarding.hidden { opacity: 0; pointer-events: none; }
+  .ob-card { background: var(--navy-mid); border: 1px solid var(--navy-border); border-radius: 16px; padding: 48px; width: 100%; max-width: 480px; box-shadow: 0 24px 64px rgba(0,0,0,0.4); max-height: 92vh; overflow-y: auto; }
+  .ob-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; }
+  .ob-logo svg { color: var(--accent); }
+  .ob-logo-text { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+  .ob-logo-text span { color: var(--accent); }
+  .ob-step { display: none; }
+  .ob-step.active { display: block; animation: fadeUp 0.3s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  .ob-label { font-size: 11px; font-weight: 600; letter-spacing: 1.2px; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
+  .ob-title { font-size: 28px; font-weight: 700; color: #fff; line-height: 1.2; margin-bottom: 8px; }
+  .ob-sub { font-size: 14px; color: #7A94AE; margin-bottom: 28px; line-height: 1.6; }
+  .role-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+  .role-card { border: 2px solid var(--navy-border); border-radius: var(--radius); padding: 22px 18px; cursor: pointer; transition: all 0.2s ease; background: rgba(255,255,255,0.02); }
+  .role-card:hover { border-color: var(--accent); background: var(--accent-glow); }
+  .role-card.selected { border-color: var(--accent); background: var(--accent-glow); }
+  .role-card-icon { font-size: 28px; margin-bottom: 10px; }
+  .role-card-title { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+  .role-card-sub { font-size: 12px; color: #7A94AE; line-height: 1.4; }
+  .ob-input-group { margin-bottom: 20px; }
+  .ob-input-label { font-size: 12px; font-weight: 600; color: #7A94AE; text-transform: uppercase; letter-spacing: 0.8px; display: block; margin-bottom: 8px; }
+  .ob-input { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--navy-border); border-radius: var(--radius-sm); color: #fff; font-size: 15px; font-family: var(--sans); transition: border-color 0.2s; outline: none; }
+  .ob-input.mono-input { font-family: var(--mono); text-transform: uppercase; letter-spacing: 1px; font-size: 16px; }
+  .ob-input:focus { border-color: var(--accent); }
+  .ob-input::placeholder { color: #3A5068; }
+  .pilot-fields { display: none; }
+  .pilot-fields.visible { display: block; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .check-chip { padding: 7px 14px; border: 1px solid var(--navy-border); border-radius: 20px; cursor: pointer; color: #7A94AE; transition: all 0.2s; user-select: none; font-family: var(--mono); font-size: 11px; }
+  .check-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .check-chip.checked { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+  .ob-btn { width: 100%; padding: 14px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; font-family: var(--sans); cursor: pointer; transition: background 0.2s; margin-top: 8px; }
+  .ob-btn:hover { background: var(--accent-dim); }
+  .ob-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .ob-back { background: transparent; border: 1px solid var(--navy-border); color: #7A94AE; margin-top: 10px; }
+  .ob-back:hover { border-color: var(--accent); color: var(--accent); background: transparent; }
+  .ob-switch { text-align: center; margin-top: 18px; font-size: 13px; color: #7A94AE; }
+  .ob-switch a { color: var(--accent); cursor: pointer; font-weight: 600; }
+  .ob-error { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35); color: #FCA5A5; font-size: 13px; padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 16px; display: none; }
+  .ob-error.show { display: block; }
+  .config-warn { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.4); color: #FCD34D; font-size: 12.5px; padding: 12px 14px; border-radius: var(--radius-sm); margin-bottom: 18px; line-height: 1.5; display: none; }
+  .config-warn.show { display: block; }
+
+  /* ── APP SHELL ── */
+  #app { display: none; height: 100vh; overflow: hidden; flex-direction: row; }
+  #app.visible { display: flex; }
+  .sidebar { width: 230px; min-width: 230px; background: var(--navy); display: flex; flex-direction: column; border-right: 1px solid var(--navy-border); position: relative; z-index: 10; }
+  .sidebar-logo { padding: 22px 20px 20px; border-bottom: 1px solid var(--navy-border); display: flex; align-items: center; gap: 10px; }
+  .sidebar-logo-text { font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+  .sidebar-logo-text span { color: var(--accent); }
+  .sidebar-section { padding: 20px 12px 8px; font-size: 10px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; color: #3A5068; padding-left: 16px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; cursor: pointer; border-radius: var(--radius-sm); margin: 1px 8px; transition: all 0.15s ease; color: #7A94AE; font-size: 14px; font-weight: 500; }
+  .nav-item:hover { background: rgba(255,255,255,0.05); color: #C5D9EA; }
+  .nav-item.active { background: var(--accent-glow); color: var(--accent); }
+  .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .nav-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
+  .nav-badge.amber { background: var(--amber); }
+  .sidebar-spacer { flex: 1; }
+  .sidebar-user { padding: 16px; border-top: 1px solid var(--navy-border); display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .user-avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), #0369A1); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .user-info { flex: 1; min-width: 0; }
+  .user-name { font-size: 13px; font-weight: 600; color: #C5D9EA; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-role { font-size: 11px; color: #3A5068; }
+  .sidebar-signout { padding: 0 16px 16px; }
+  .signout-btn { width: 100%; background: transparent; border: 1px solid var(--navy-border); color: #7A94AE; padding: 9px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: all .15s; }
+  .signout-btn:hover { border-color: var(--red); color: #FCA5A5; }
+
+  .main-content { flex: 1; overflow-y: auto; padding: 32px; background: var(--bg); }
+  .page { display: none; }
+  .page.active { display: block; animation: fadeUp 0.25s ease; }
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; }
+  .page-title { font-size: 24px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
+  .page-subtitle { font-size: 14px; color: var(--text-2); margin-top: 3px; }
+  .btn { padding: 9px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; font-family: var(--sans); display: inline-flex; align-items: center; gap: 6px; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-dim); }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-2); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-green:hover { filter: brightness(0.95); }
+  .btn-ghost-red { background: transparent; border: 1px solid var(--border); color: var(--text-2); }
+  .btn-ghost-red:hover { border-color: var(--red); color: var(--red); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
+  .empty-state { text-align: center; padding: 60px 20px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+  .empty-icon { font-size: 40px; margin-bottom: 16px; }
+  .empty-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .empty-sub { font-size: 14px; color: var(--text-2); max-width: 360px; margin: 0 auto 20px; line-height: 1.6; }
+  .airport-code { font-family: var(--mono); font-weight: 600; font-size: 13px; background: #EFF6FF; color: #1D4ED8; padding: 2px 8px; border-radius: 4px; border-bottom: 2px solid rgba(29,78,216,0.2); display: inline-block; }
+  .tag { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .tag-blue { background: #EFF6FF; color: #1D4ED8; }
+  .tag-green { background: #ECFDF5; color: #059669; }
+  .tag-amber { background: #FFFBEB; color: #D97706; }
+  .tag-gray { background: #F1F5F9; color: #64748B; }
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow); }
+  .stat-label { font-size: 12px; font-weight: 500; color: var(--text-2); margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--text); letter-spacing: -1px; }
+  .stat-sub { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+  .trip-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; display: flex; align-items: center; gap: 20px; margin-bottom: 12px; box-shadow: var(--shadow); transition: box-shadow 0.2s; }
+  .trip-card:hover { box-shadow: var(--shadow-md); }
+  .trip-date-block { text-align: center; min-width: 52px; background: var(--accent-glow); border-radius: var(--radius-sm); padding: 10px 12px; }
+  .trip-month { font-size: 10px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+  .trip-day { font-size: 24px; font-weight: 800; color: var(--accent); line-height: 1; }
+  .trip-info { flex: 1; }
+  .trip-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .trip-meta { font-size: 13px; color: var(--text-2); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .filter-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .filter-input { padding: 8px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; color: var(--text); background: var(--card); outline: none; transition: border-color 0.2s; font-family: var(--sans); flex: 1; min-width: 140px; }
+  .filter-input.mono-filter { font-family: var(--mono); text-transform: uppercase; }
+  .filter-input:focus { border-color: var(--accent); }
+  .pilot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .pilot-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); transition: box-shadow 0.2s; }
+  .pilot-card:hover { box-shadow: var(--shadow-md); }
+  .pilot-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .pilot-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #1E3A5F, #0F5E8C); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .pilot-name { font-size: 15px; font-weight: 600; }
+  .pilot-location { font-size: 12px; color: var(--text-2); }
+  .pilot-ratings { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .pilot-avail { font-size: 12px; color: var(--text-2); }
+  .avail-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 5px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.7px; }
+  .form-input, .form-select { padding: 11px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; color: var(--text); background: var(--card); outline: none; transition: border-color 0.2s; font-family: var(--sans); width: 100%; }
+  .form-input.mono { font-family: var(--mono); text-transform: uppercase; letter-spacing: 1px; }
+  .form-input:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  .form-hint { font-size: 11px; color: var(--text-3); }
+  .match-result-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 14px; overflow: hidden; box-shadow: var(--shadow); }
+  .match-header { display: flex; align-items: center; gap: 14px; padding: 18px 22px; border-bottom: 1px solid var(--border); }
+  .match-pass-bar { width: 4px; align-self: stretch; border-radius: 2px; background: var(--green); flex-shrink: 0; }
+  .match-pass-bar.fail { background: var(--red); }
+  .match-verdict { margin-left: auto; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+  .verdict-pass { background: #ECFDF5; color: #059669; }
+  .verdict-fail { background: #FEF2F2; color: #DC2626; }
+  .match-checks { padding: 16px 22px; }
+  .check-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid #F1F5F9; }
+  .check-row:last-child { border-bottom: none; }
+  .check-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+  .check-label { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .check-reason { font-size: 12px; color: var(--text-2); line-height: 1.5; }
+  .match-actions { padding: 0 22px 18px; display: flex; gap: 10px; align-items: center; }
+  .conn-status { font-size: 12px; font-weight: 600; }
+  .match-request-summary { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 24px; display: flex; gap: 32px; align-items: center; flex-wrap: wrap; }
+  .req-field { display: flex; flex-direction: column; gap: 3px; }
+  .req-field-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-3); }
+  .req-field-value { font-size: 14px; font-weight: 600; color: var(--text); }
+  .calendar-nav { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .cal-nav-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: var(--card); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text-2); transition: all 0.15s; }
+  .cal-nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .cal-month-label { font-size: 17px; font-weight: 700; }
+  .calendar-grid { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .cal-header-row { display: grid; grid-template-columns: repeat(7, 1fr); background: #F8FAFC; border-bottom: 1px solid var(--border); }
+  .cal-day-name { padding: 10px; text-align: center; font-size: 11px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; }
+  .cal-body { display: grid; grid-template-columns: repeat(7, 1fr); }
+  .cal-cell { min-height: 90px; padding: 8px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  .cal-cell:nth-child(7n) { border-right: none; }
+  .cal-cell.other-month { background: #FAFBFC; }
+  .cal-cell.today { background: #EFF6FF; }
+  .cal-cell-num { font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 4px; }
+  .cal-cell.today .cal-cell-num { width: 22px; height: 22px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .cal-event { background: var(--accent-glow); border-left: 2px solid var(--accent); padding: 2px 6px; border-radius: 0 3px 3px 0; font-size: 10px; font-weight: 600; color: var(--accent); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .profile-section-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .profile-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #F1F5F9; }
+  .profile-row:last-child { border-bottom: none; }
+  .profile-field-name { font-size: 13px; color: var(--text-2); }
+  .profile-field-value { font-size: 13px; font-weight: 600; color: var(--text); }
+  .verification-row { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid #F1F5F9; }
+  .verification-row:last-child { border-bottom: none; }
+  .ver-icon { font-size: 18px; }
+  .ver-label { font-size: 13px; font-weight: 500; flex: 1; }
+  .ver-status { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .ver-pending { background: #FFFBEB; color: #D97706; }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: #fff; padding: 12px 20px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.25); display: none; z-index: 500; border-left: 3px solid var(--accent); animation: slideIn 0.3s ease; }
+  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  .loading-screen { position: fixed; inset: 0; background: var(--navy); display: flex; align-items: center; justify-content: center; z-index: 2000; color: #7A94AE; font-size: 14px; }
+  @media (max-width: 700px) {
+    .sidebar { width: 60px; min-width: 60px; }
+    .sidebar-logo-text, .nav-item span, .nav-badge, .sidebar-user .user-info, .sidebar-signout { display: none; }
+    .nav-item { justify-content: center; padding: 12px; }
+    .sidebar-user { justify-content: center; padding: 12px; }
+    .main-content { padding: 20px 16px; }
+    .stats-row { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .profile-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loading">Connecting…</div>
+
+<!-- ══════ ONBOARDING / AUTH ══════ -->
+<div id="onboarding" style="display:none">
+  <div class="ob-card">
+    <div class="ob-logo">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 2 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        <path d="m7.5 4.27 9 5.15M3.29 7 12 12l8.71-5M12 22V12"/>
+      </svg>
+      <span class="ob-logo-text">Aero<span>Connect</span></span>
+    </div>
+
+    <div class="config-warn" id="config-warn">
+      ⚠️ Backend not configured yet. Open this file and paste your Supabase URL and anon key into the <b>CONFIG</b> block near the top of the script. See the setup guide.
+    </div>
+    <div class="ob-error" id="auth-error"></div>
+
+    <!-- Step: Sign in -->
+    <div class="ob-step active" id="ob-signin">
+      <div class="ob-label">Welcome back</div>
+      <div class="ob-title">Sign in</div>
+      <div class="ob-sub">Log in to your AeroConnect account.</div>
+      <div class="ob-input-group">
+        <label class="ob-input-label">Email</label>
+        <input type="email" class="ob-input" id="signin-email" placeholder="you@email.com">
+      </div>
+      <div class="ob-input-group">
+        <label class="ob-input-label">Password</label>
+        <input type="password" class="ob-input" id="signin-password" placeholder="••••••••">
+      </div>
+      <button class="ob-btn" id="signin-btn" onclick="doSignIn()">Sign in</button>
+      <div class="ob-switch">New here? <a onclick="goToStep('1')">Create an account</a></div>
+    </div>
+
+    <!-- Step 1: Role -->
+    <div class="ob-step" id="ob-step-1">
+      <div class="ob-label">Create account · Step 1 of 3</div>
+      <div class="ob-title">Who are you?</div>
+      <div class="ob-sub">Tell us your role so we can tailor your experience.</div>
+      <div class="role-cards">
+        <div class="role-card" id="role-owner" onclick="selectRole('owner')">
+          <div class="role-card-icon">🛬</div>
+          <div class="role-card-title">Aircraft Owner</div>
+          <div class="role-card-sub">I need to find qualified pilots for my aircraft</div>
+        </div>
+        <div class="role-card" id="role-pilot" onclick="selectRole('pilot')">
+          <div class="role-card-icon">🧑‍✈️</div>
+          <div class="role-card-title">Pilot</div>
+          <div class="role-card-sub">I'm available to fly and looking for opportunities</div>
+        </div>
+      </div>
+      <button class="ob-btn" id="step1-next" onclick="goToStep('2')" disabled>Continue</button>
+      <div class="ob-switch">Already have an account? <a onclick="goToStep('signin')">Sign in</a></div>
+    </div>
+
+    <!-- Step 2: Profile -->
+    <div class="ob-step" id="ob-step-2">
+      <div class="ob-label">Create account · Step 2 of 3</div>
+      <div class="ob-title">Tell us about yourself</div>
+      <div class="ob-sub">This helps us find relevant matches near you.</div>
+      <div class="ob-input-group">
+        <label class="ob-input-label">Full Name</label>
+        <input type="text" class="ob-input" id="input-name" placeholder="e.g. Alex Morgan" oninput="validateStep2()">
+      </div>
+      <div class="ob-input-group">
+        <label class="ob-input-label">Home Airport (ICAO/IATA code)</label>
+        <input type="text" class="ob-input mono-input" id="input-airport" placeholder="e.g. KLAX" maxlength="5" oninput="validateStep2()">
+      </div>
+      <div class="pilot-fields" id="pilot-fields">
+        <div class="ob-input-group">
+          <label class="ob-input-label">Aircraft Ratings (pick at least one)</label>
+          <div class="checkbox-group" id="ratings-group">
+            <div class="check-chip" onclick="toggleRating(this)" data-val="C172">C172</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="PA28">PA28</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="BE36">BE36</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="PC12">PC12</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="SR22">SR22</div>
+            <div class="check-chip" onclick="toggleRating(this)" data-val="C208">C208</div>
+          </div>
+        </div>
+        <div class="ob-input-group">
+          <label class="ob-input-label">Range (nautical miles from home)</label>
+          <input type="number" class="ob-input" id="input-range" placeholder="e.g. 150" min="10" max="2000" oninput="validateStep2()">
+        </div>
+        <div class="ob-input-group">
+          <label class="ob-input-label">Availability window</label>
+          <div class="two-col">
+            <input type="date" class="ob-input" id="input-avail-from" oninput="validateStep2()">
+            <input type="date" class="ob-input" id="input-avail-to" oninput="validateStep2()">
+          </div>
+        </div>
+      </div>
+      <button class="ob-btn" id="step2-next" onclick="goToStep('3')" disabled>Continue</button>
+      <button class="ob-btn ob-back" onclick="goToStep('1')">← Back</button>
+    </div>
+
+    <!-- Step 3: Credentials -->
+    <div class="ob-step" id="ob-step-3">
+      <div class="ob-label">Create account · Step 3 of 3</div>
+      <div class="ob-title">Create your login</div>
+      <div class="ob-sub">You'll use this to sign in from any laptop.</div>
+      <div class="ob-input-group">
+        <label class="ob-input-label">Email</label>
+        <input type="email" class="ob-input" id="signup-email" placeholder="you@email.com" oninput="validateStep3()">
+      </div>
+      <div class="ob-input-group">
+        <label class="ob-input-label">Password (min 6 characters)</label>
+        <input type="password" class="ob-input" id="signup-password" placeholder="••••••••" oninput="validateStep3()">
+      </div>
+      <button class="ob-btn" id="step3-next" onclick="finishOnboarding()" disabled>Create account & enter →</button>
+      <button class="ob-btn ob-back" onclick="goToStep('2')">← Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ APP SHELL ══════ -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0EA5E9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 2 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        <path d="m7.5 4.27 9 5.15M3.29 7 12 12l8.71-5M12 22V12"/>
+      </svg>
+      <span class="sidebar-logo-text">Aero<span>Connect</span></span>
+    </div>
+    <div class="sidebar-section">Navigation</div>
+    <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard', this)"><span class="nav-icon">📊</span><span>Dashboard</span></div>
+    <div class="nav-item" data-page="browse" onclick="showPage('browse', this)"><span class="nav-icon">👥</span><span>Browse Pilots</span></div>
+    <div class="nav-item" data-page="request" id="nav-request" onclick="showPage('request', this)"><span class="nav-icon">✈️</span><span>New Request</span></div>
+    <div class="nav-item" data-page="matches" id="nav-matches" onclick="showPage('matches', this)"><span class="nav-icon">🎯</span><span>Matches</span></div>
+    <div class="nav-item" data-page="inbox" id="nav-inbox" onclick="showPage('inbox', this)" style="display:none"><span class="nav-icon">🔔</span><span>Requests</span><span class="nav-badge amber" id="inbox-badge" style="display:none">0</span></div>
+    <div class="nav-item" data-page="calendar" onclick="showPage('calendar', this)"><span class="nav-icon">📅</span><span>Calendar</span></div>
+    <div class="nav-item" data-page="profile" id="nav-profile" onclick="showPage('profile', this)"><span class="nav-icon">👤</span><span>Profile</span></div>
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-user" onclick="showPage('profile', document.getElementById('nav-profile'))">
+      <div class="user-avatar" id="sidebar-avatar">?</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebar-name">—</div>
+        <div class="user-role" id="sidebar-role">—</div>
+      </div>
+    </div>
+    <div class="sidebar-signout"><button class="signout-btn" onclick="doSignOut()">Sign out</button></div>
+  </aside>
+
+  <main class="main-content">
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title" id="dash-greeting">Good morning</div>
+          <div class="page-subtitle" id="dash-sub">Here's a summary of your activity</div>
+        </div>
+        <button class="btn btn-primary" id="dash-cta" onclick="showPage('request', document.getElementById('nav-request'))">+ New Request</button>
+      </div>
+      <div class="stats-row" id="dash-stats"></div>
+      <div id="trip-list"></div>
+    </div>
+
+    <!-- BROWSE PILOTS -->
+    <div class="page" id="page-browse">
+      <div class="page-header"><div>
+        <div class="page-title">Browse Pilots</div>
+        <div class="page-subtitle">Live directory — every pilot who has joined AeroConnect</div>
+      </div></div>
+      <div class="filter-bar">
+        <input class="filter-input mono-filter" id="filter-aircraft" placeholder="Aircraft (e.g. C172)" oninput="renderPilots()">
+        <input class="filter-input mono-filter" id="filter-airport" placeholder="Airport (e.g. KLAX)" oninput="renderPilots()">
+        <input class="filter-input" id="filter-date" type="date" oninput="renderPilots()">
+        <button class="btn btn-outline" onclick="clearFilters()">Clear filters</button>
+      </div>
+      <div class="pilot-grid" id="pilot-grid"></div>
+    </div>
+
+    <!-- NEW REQUEST -->
+    <div class="page" id="page-request">
+      <div class="page-header"><div>
+        <div class="page-title">New Request</div>
+        <div class="page-subtitle">Specify your trip and we'll find pilots who qualify</div>
+      </div></div>
+      <div class="card" style="max-width:600px;">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Aircraft Type</label>
+            <select class="form-select" id="req-aircraft">
+              <option value="">Select aircraft…</option>
+              <option>C172</option><option>PA28</option><option>BE36</option>
+              <option>PC12</option><option>SR22</option><option>C208</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Departure Airport</label>
+            <input class="form-input mono" id="req-airport" placeholder="KLAX" maxlength="5">
+            <span class="form-hint">ICAO or IATA code</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Trip Date</label>
+            <input type="date" class="form-input" id="req-date">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Trip Name (optional)</label>
+            <input type="text" class="form-input" id="req-name" placeholder="e.g. Catalina day trip">
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Notes (optional)</label>
+            <input type="text" class="form-input" id="req-notes" placeholder="Any extra details for pilots…">
+          </div>
+        </div>
+        <div style="margin-top:24px; display:flex; gap:10px;">
+          <button class="btn btn-primary" onclick="submitRequest()">Find Matching Pilots →</button>
+          <button class="btn btn-outline" onclick="clearRequest()">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MATCHES -->
+    <div class="page" id="page-matches">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Pilot Matches</div>
+          <div class="page-subtitle" id="match-subtitle">Submit a request to see who qualifies</div>
+        </div>
+        <button class="btn btn-outline" onclick="showPage('request', document.getElementById('nav-request'))">← New Request</button>
+      </div>
+      <div id="match-content"></div>
+    </div>
+
+    <!-- INBOX (pilots) -->
+    <div class="page" id="page-inbox">
+      <div class="page-header"><div>
+        <div class="page-title">Incoming Requests</div>
+        <div class="page-subtitle">Owners who want to book you. Accept to confirm the trip.</div>
+      </div></div>
+      <div id="inbox-content"></div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="page" id="page-calendar">
+      <div class="page-header"><div>
+        <div class="page-title">Calendar</div>
+        <div class="page-subtitle">Monthly view of your trips and bookings</div>
+      </div></div>
+      <div class="calendar-nav">
+        <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
+        <div class="cal-month-label" id="cal-label"></div>
+        <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
+      </div>
+      <div class="calendar-grid">
+        <div class="cal-header-row">
+          <div class="cal-day-name">Sun</div><div class="cal-day-name">Mon</div><div class="cal-day-name">Tue</div>
+          <div class="cal-day-name">Wed</div><div class="cal-day-name">Thu</div><div class="cal-day-name">Fri</div><div class="cal-day-name">Sat</div>
+        </div>
+        <div class="cal-body" id="cal-body"></div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="page" id="page-profile">
+      <div class="page-header"><div>
+        <div class="page-title">Profile</div>
+        <div class="page-subtitle">Your account details and verification status</div>
+      </div></div>
+      <div class="profile-grid">
+        <div class="card">
+          <div class="profile-section-title">Account Details</div>
+          <div class="profile-row"><span class="profile-field-name">Full Name</span><span class="profile-field-value" id="prof-name">—</span></div>
+          <div class="profile-row"><span class="profile-field-name">Role</span><span class="profile-field-value" id="prof-role">—</span></div>
+          <div class="profile-row"><span class="profile-field-name">Home Airport</span><span class="profile-field-value" id="prof-airport">—</span></div>
+          <div id="prof-range-row" class="profile-row" style="display:none"><span class="profile-field-name">Operating Range</span><span class="profile-field-value" id="prof-range">—</span></div>
+          <div id="prof-avail-row" class="profile-row" style="display:none"><span class="profile-field-name">Availability</span><span class="profile-field-value" id="prof-avail">—</span></div>
+          <div id="prof-ratings-row" class="profile-row" style="display:none"><span class="profile-field-name">Aircraft Ratings</span><span class="profile-field-value" id="prof-ratings" style="text-align:right">—</span></div>
+          <div class="profile-row"><span class="profile-field-name">Member Since</span><span class="profile-field-value" id="prof-since">—</span></div>
+        </div>
+        <div class="card">
+          <div class="profile-section-title">Verification Status</div>
+          <div class="verification-row"><span class="ver-icon">✉️</span><span class="ver-label">Email Address</span><span class="ver-status ver-pending">Pending</span></div>
+          <div class="verification-row"><span class="ver-icon">🪪</span><span class="ver-label">Government ID</span><span class="ver-status ver-pending">Not submitted</span></div>
+          <div class="verification-row" id="cert-row"><span class="ver-icon">📋</span><span class="ver-label">Pilot Certificate</span><span class="ver-status ver-pending">Not submitted</span></div>
+          <div class="verification-row" id="medical-row"><span class="ver-icon">🩺</span><span class="ver-label">Medical Certificate</span><span class="ver-status ver-pending">Not submitted</span></div>
+          <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+            <p style="font-size:12px;color:var(--text-2);line-height:1.6;">Complete verification to unlock full access to pilot requests and trip bookings.</p>
+            <button class="btn btn-primary" style="margin-top:12px;font-size:12px;padding:8px 16px;" onclick="showToast('Verification flow coming soon')">Start Verification</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ════════════════════════════════════════════════════════════
+// CONFIG  ← paste your Supabase project values here (see setup guide)
+// ════════════════════════════════════════════════════════════
+const SUPABASE_URL = "https://hhmppnmodfzifvwjgzru.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_FwfRhm20zuVTDmUx4QJrDg_GW5W05ew";
+
+// ════════════════════════════════════════════════════════════
+// REFERENCE DATA — airport coordinates for distance matching
+// (haversine; unknown airports fall back to a soft pass)
+// ════════════════════════════════════════════════════════════
+const AIRPORTS = {
+  KLAX:[33.9416,-118.4085], KBUR:[34.2007,-118.3590], KSMO:[34.0158,-118.4513],
+  KVNY:[34.2098,-118.4899], KLGB:[33.8177,-118.1516], KONT:[34.0560,-117.6012],
+  KPOC:[34.0916,-117.7817], KSNA:[33.6757,-117.8682], KSAN:[32.7336,-117.1897],
+  KSFO:[37.6213,-122.3790], KOAK:[37.7126,-122.2197], KSJC:[37.3639,-121.9289],
+  KSAC:[38.5125,-121.4930], KFAT:[36.7762,-119.7181], KLAS:[36.0840,-115.1537],
+  KPHX:[33.4343,-112.0116], KSEA:[47.4502,-122.3088], KPDX:[45.5887,-122.5975],
+  KDEN:[39.8561,-104.6737], KJFK:[40.6413,-73.7781], KLGA:[40.7769,-73.8740],
+  KEWR:[40.6895,-74.1745], KBOS:[42.3656,-71.0096], KORD:[41.9742,-87.9073],
+  KMDW:[41.7868,-87.7522], KATL:[33.6407,-84.4277], KDFW:[32.8998,-97.0403],
+  KIAH:[29.9902,-95.3368], KMIA:[25.7959,-80.2870], KAUS:[30.1975,-97.6664]
+};
+function haversineNm(a, b) {
+  const A = AIRPORTS[a], B = AIRPORTS[b];
+  if (!A || !B) return null;            // unknown airport
+  const R = 3440.065;                    // earth radius in nautical miles
+  const toR = x => x * Math.PI / 180;
+  const dLat = toR(B[0]-A[0]), dLon = toR(B[1]-A[1]);
+  const h = Math.sin(dLat/2)**2 + Math.cos(toR(A[0]))*Math.cos(toR(B[0]))*Math.sin(dLon/2)**2;
+  return Math.round(2 * R * Math.asin(Math.sqrt(h)));
+}
+
+// ════════════════════════════════════════════════════════════
+// SUPABASE CLIENT + STATE
+// ════════════════════════════════════════════════════════════
+let sb = null;
+const configured = SUPABASE_URL.startsWith("http") && SUPABASE_ANON_KEY.length > 20;
+if (configured) sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const state = {
+  user: null, profile: null,
+  pilots: [], myRequests: [], myConnections: [],
+  lastRequest: null, lastResults: null,
+  calYear: new Date().getFullYear(), calMonth: new Date().getMonth()
+};
+const signup = { role: null, ratings: [] };
+
+// ════════════════════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', async () => {
+  // default request date = tomorrow
+  const tom = new Date(); tom.setDate(tom.getDate()+1);
+  document.getElementById('req-date').value = tom.toISOString().slice(0,10);
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('onboarding').style.display = 'flex';
+
+  if (!configured) { document.getElementById('config-warn').classList.add('show'); return; }
+
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) { await afterLogin(session.user); }
+});
+
+// ════════════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════════════
+function showAuthError(msg){ const e=document.getElementById('auth-error'); e.textContent=msg; e.classList.add('show'); }
+function clearAuthError(){ document.getElementById('auth-error').classList.remove('show'); }
+
+function goToStep(n) {
+  clearAuthError();
+  document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
+  const id = (n === 'signin') ? 'ob-signin' : `ob-step-${n}`;
+  document.getElementById(id).classList.add('active');
+  if (n === '2') document.getElementById('pilot-fields').classList.toggle('visible', signup.role === 'pilot');
+}
+
+function selectRole(r) {
+  signup.role = r;
+  document.getElementById('role-owner').classList.toggle('selected', r === 'owner');
+  document.getElementById('role-pilot').classList.toggle('selected', r === 'pilot');
+  document.getElementById('step1-next').disabled = false;
+}
+
+function toggleRating(el) {
+  el.classList.toggle('checked');
+  signup.ratings = Array.from(document.querySelectorAll('.check-chip.checked')).map(c => c.dataset.val);
+  validateStep2();
+}
+
+function validateStep2() {
+  const name = document.getElementById('input-name').value.trim();
+  const airport = document.getElementById('input-airport').value.trim();
+  let valid = name.length >= 2 && airport.length >= 3;
+  if (signup.role === 'pilot') {
+    const range = parseInt(document.getElementById('input-range').value);
+    const af = document.getElementById('input-avail-from').value;
+    const at = document.getElementById('input-avail-to').value;
+    valid = valid && signup.ratings.length >= 1 && range >= 10 && af && at && af <= at;
+  }
+  document.getElementById('step2-next').disabled = !valid;
+}
+
+function validateStep3() {
+  const email = document.getElementById('signup-email').value.trim();
+  const pw = document.getElementById('signup-password').value;
+  document.getElementById('step3-next').disabled = !(email.includes('@') && pw.length >= 6);
+}
+
+async function doSignIn() {
+  clearAuthError();
+  if (!configured) { showAuthError('Backend not configured. See setup guide.'); return; }
+  const email = document.getElementById('signin-email').value.trim();
+  const pw = document.getElementById('signin-password').value;
+  if (!email || !pw) { showAuthError('Enter your email and password.'); return; }
+  const btn = document.getElementById('signin-btn'); btn.disabled = true; btn.textContent = 'Signing in…';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+  btn.disabled = false; btn.textContent = 'Sign in';
+  if (error) { showAuthError(error.message); return; }
+  await afterLogin(data.user);
+}
+
+async function finishOnboarding() {
+  clearAuthError();
+  const email = document.getElementById('signup-email').value.trim();
+  const pw = document.getElementById('signup-password').value;
+  const btn = document.getElementById('step3-next'); btn.disabled = true; btn.textContent = 'Creating…';
+
+  const { data, error } = await sb.auth.signUp({ email, password: pw });
+  if (error) { showAuthError(error.message); btn.disabled = false; btn.textContent = 'Create account & enter →'; return; }
+  if (!data.session) {
+    showAuthError('Account created, but email confirmation is ON. Disable it in Supabase → Authentication → Providers → Email, then sign in.');
+    btn.disabled = false; btn.textContent = 'Create account & enter →'; return;
+  }
+
+  const profile = {
+    id: data.user.id,
+    role: signup.role,
+    full_name: document.getElementById('input-name').value.trim(),
+    home_airport: document.getElementById('input-airport').value.trim().toUpperCase(),
+    ratings: signup.role === 'pilot' ? signup.ratings : [],
+    range_nm: signup.role === 'pilot' ? parseInt(document.getElementById('input-range').value) : null,
+    available_from: signup.role === 'pilot' ? document.getElementById('input-avail-from').value : null,
+    available_to: signup.role === 'pilot' ? document.getElementById('input-avail-to').value : null,
+    cert_level: signup.role === 'pilot' ? 'Self-reported' : null
+  };
+  const { error: pErr } = await sb.from('profiles').insert(profile);
+  if (pErr) { showAuthError('Could not save profile: ' + pErr.message); btn.disabled = false; btn.textContent = 'Create account & enter →'; return; }
+
+  await afterLogin(data.user);
+}
+
+async function afterLogin(user) {
+  state.user = user;
+  const { data: prof, error } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  if (error || !prof) {
+    // Account exists but profile missing — send to create-profile flow
+    showAuthError('No profile found for this account. Please create one.');
+    goToStep('1');
+    return;
+  }
+  state.profile = prof;
+  enterApp();
+  await refreshAll();
+  subscribeRealtime();
+}
+
+async function doSignOut() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
+// ════════════════════════════════════════════════════════════
+// ENTER APP / ROLE GATING
+// ════════════════════════════════════════════════════════════
+function enterApp() {
+  const p = state.profile;
+  const inits = p.full_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('sidebar-avatar').textContent = inits;
+  document.getElementById('sidebar-name').textContent = p.full_name;
+  document.getElementById('sidebar-role').textContent = p.role === 'owner' ? 'Aircraft Owner' : 'Pilot';
+
+  const hr = new Date().getHours();
+  const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('dash-greeting').textContent = `${greet}, ${p.full_name.split(' ')[0]}`;
+
+  // Role-based navigation
+  const owner = p.role === 'owner';
+  document.getElementById('nav-request').style.display = owner ? '' : 'none';
+  document.getElementById('nav-matches').style.display = owner ? '' : 'none';
+  document.getElementById('nav-inbox').style.display = owner ? 'none' : '';
+  document.getElementById('dash-cta').style.display = owner ? '' : 'none';
+  document.getElementById('cert-row').style.display = owner ? 'none' : 'flex';
+  document.getElementById('medical-row').style.display = owner ? 'none' : 'flex';
+
+  populateProfile();
+  document.getElementById('onboarding').classList.add('hidden');
+  setTimeout(() => { document.getElementById('onboarding').style.display = 'none'; }, 400);
+  document.getElementById('app').classList.add('visible');
+}
+
+// ════════════════════════════════════════════════════════════
+// DATA LOADING + REALTIME
+// ════════════════════════════════════════════════════════════
+async function refreshAll() {
+  if (!sb || !state.profile) return;
+  // pilots directory
+  const { data: pilots } = await sb.from('profiles').select('*').eq('role', 'pilot').order('created_at');
+  state.pilots = pilots || [];
+  // my requests (owner) / all open requests context
+  if (state.profile.role === 'owner') {
+    const { data: reqs } = await sb.from('requests').select('*').eq('owner_id', state.profile.id).order('trip_date');
+    state.myRequests = reqs || [];
+  }
+  // connections involving me
+  const { data: conns } = await sb.from('connections').select('*').or(`owner_id.eq.${state.profile.id},pilot_id.eq.${state.profile.id}`).order('created_at', { ascending: false });
+  state.myConnections = conns || [];
+
+  renderActivePage();
+  updateBadges();
+}
+
+let realtimeChannel = null;
+function subscribeRealtime() {
+  if (!sb || realtimeChannel) return;
+  realtimeChannel = sb.channel('aeroconnect')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => refreshAll())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => refreshAll())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'connections' }, () => refreshAll())
+    .subscribe();
+}
+
+function renderActivePage() {
+  const active = document.querySelector('.nav-item.active');
+  const page = active ? active.dataset.page : 'dashboard';
+  if (page === 'dashboard') renderDashboard();
+  else if (page === 'browse') renderPilots();
+  else if (page === 'matches') { if (state.lastResults) renderMatches(state.lastResults, state.lastRequest); }
+  else if (page === 'inbox') renderInbox();
+  else if (page === 'calendar') renderCalendar();
+  else if (page === 'profile') populateProfile();
+}
+
+function updateBadges() {
+  // pilot inbox: pending connections addressed to me
+  if (state.profile.role === 'pilot') {
+    const pending = state.myConnections.filter(c => c.pilot_id === state.profile.id && c.status === 'pending').length;
+    const b = document.getElementById('inbox-badge');
+    b.textContent = pending; b.style.display = pending ? 'inline' : 'none';
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════
+function showPage(name, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`page-${name}`).classList.add('active');
+  if (navEl) navEl.classList.add('active');
+  else { const fb = document.querySelector(`.nav-item[data-page="${name}"]`); if (fb) fb.classList.add('active'); }
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'browse') renderPilots();
+  if (name === 'inbox') renderInbox();
+  if (name === 'calendar') renderCalendar();
+  if (name === 'profile') populateProfile();
+}
+
+// ════════════════════════════════════════════════════════════
+// BROWSE PILOTS
+// ════════════════════════════════════════════════════════════
+function nextAvailLabel(p) {
+  const today = new Date().toISOString().slice(0,10);
+  if (!p.available_from || !p.available_to) return 'Not set';
+  if (today > p.available_to) return 'No upcoming availability';
+  const start = today > p.available_from ? today : p.available_from;
+  return `${formatDate(start)} – ${formatDate(p.available_to)}`;
+}
+function renderPilots() {
+  const acFilter = document.getElementById('filter-aircraft').value.trim().toUpperCase();
+  const apFilter = document.getElementById('filter-airport').value.trim().toUpperCase();
+  const dtFilter = document.getElementById('filter-date').value;
+  let filtered = state.pilots.slice();
+  if (acFilter) filtered = filtered.filter(p => (p.ratings||[]).some(r => r.includes(acFilter)));
+  if (apFilter) filtered = filtered.filter(p => (p.home_airport||'').includes(apFilter));
+  if (dtFilter) filtered = filtered.filter(p => p.available_from && p.available_to && dtFilter >= p.available_from && dtFilter <= p.available_to);
+
+  const grid = document.getElementById('pilot-grid');
+  if (state.pilots.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-icon">👥</div><div class="empty-title">No pilots have joined yet</div>
+      <div class="empty-sub">When someone signs up as a pilot, they'll appear here automatically — live, across every laptop.</div></div>`;
+    return;
+  }
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-icon">🔍</div><div class="empty-title">No pilots match those filters</div>
+      <div class="empty-sub">Try widening your search — adjust the aircraft type, airport, or date.</div></div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map(p => {
+    const inits = p.full_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+    return `<div class="pilot-card">
+      <div class="pilot-header">
+        <div class="pilot-avatar">${inits}</div>
+        <div><div class="pilot-name">${esc(p.full_name)}</div>
+          <div class="pilot-location"><span class="airport-code">${esc(p.home_airport)}</span> · ${esc(p.cert_level||'Pilot')}</div></div>
+      </div>
+      <div class="pilot-ratings">${(p.ratings||[]).map(r => `<span class="tag tag-blue" style="font-family:var(--mono);font-size:10px">${esc(r)}</span>`).join('')}</div>
+      <div class="pilot-avail"><span class="avail-dot"></span>Range: ${p.range_nm||'—'} nm</div>
+      <div class="pilot-avail" style="margin-top:4px"><span class="avail-dot"></span>Available: ${nextAvailLabel(p)}</div>
+    </div>`;
+  }).join('');
+}
+function clearFilters() {
+  ['filter-aircraft','filter-airport','filter-date'].forEach(id => document.getElementById(id).value = '');
+  renderPilots();
+}
+
+// ════════════════════════════════════════════════════════════
+// NEW REQUEST + MATCHING (owners)
+// ════════════════════════════════════════════════════════════
+async function submitRequest() {
+  const aircraft = document.getElementById('req-aircraft').value;
+  const airport = document.getElementById('req-airport').value.trim().toUpperCase();
+  const date = document.getElementById('req-date').value;
+  const tripName = document.getElementById('req-name').value.trim() || `${aircraft} trip from ${airport}`;
+  const notes = document.getElementById('req-notes').value.trim();
+  if (!aircraft || !airport || !date) { showToast('Please fill in aircraft, airport, and date.'); return; }
+
+  const { data, error } = await sb.from('requests').insert({
+    owner_id: state.profile.id, aircraft, airport, trip_date: date, trip_name: tripName, notes
+  }).select().single();
+  if (error) { showToast('Could not save request: ' + error.message); return; }
+
+  state.lastRequest = { id: data.id, aircraft, airport, date, tripName };
+  await refreshAll();
+  const results = runMatching(aircraft, airport, date);
+  state.lastResults = results;
+  renderMatches(results, state.lastRequest);
+  showToast('Request posted — matches ready!');
+  showPage('matches', document.getElementById('nav-matches'));
+}
+
+function runMatching(aircraft, reqAirport, date) {
+  return state.pilots.map(pilot => {
+    const hasRating = (pilot.ratings||[]).includes(aircraft);
+    const isAvail = !!(pilot.available_from && pilot.available_to && date >= pilot.available_from && date <= pilot.available_to);
+    const dist = haversineNm(pilot.home_airport, reqAirport);
+    let inRange, distDisplay;
+    if (dist === null) { inRange = true; distDisplay = `distance unverified (unlisted airport) — shown as eligible`; }
+    else { inRange = dist <= (pilot.range_nm||0); distDisplay = `${dist} nm from ${pilot.home_airport}`; }
+    const passes = hasRating && isAvail && inRange;
+    return { pilot, passes, checks: {
+      rating: { pass: hasRating, reason: hasRating ? `Rated for ${aircraft}` : `Not rated for ${aircraft} — holds: ${(pilot.ratings||[]).join(', ')||'none'}` },
+      avail:  { pass: isAvail,   reason: isAvail ? `Available on ${formatDate(date)}` : `Not available on ${formatDate(date)}` },
+      range:  { pass: inRange,   reason: inRange ? `Within range (${distDisplay})` : `Out of range (${distDisplay}, max ${pilot.range_nm} nm)` }
+    }};
+  });
+}
+
+function connectionFor(pilotId) {
+  if (!state.lastRequest) return null;
+  return state.myConnections.find(c => c.request_id === state.lastRequest.id && c.pilot_id === pilotId);
+}
+
+async function connectToPilot(pilotId) {
+  if (!state.lastRequest) return;
+  const { error } = await sb.from('connections').insert({
+    request_id: state.lastRequest.id, owner_id: state.profile.id, pilot_id: pilotId, status: 'pending'
+  });
+  if (error) { showToast('Could not send: ' + error.message); return; }
+  showToast('Connection request sent to the pilot.');
+  await refreshAll();
+}
+
+function renderMatches(results, req) {
+  if (!results) {
+    document.getElementById('match-content').innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🎯</div><div class="empty-title">No request yet</div>
+      <div class="empty-sub">Go to New Request and fill in the aircraft, airport, and date. We'll show exactly why each pilot passes or fails.</div>
+      <button class="btn btn-primary" onclick="showPage('request', document.getElementById('nav-request'))">Create a request</button></div>`;
+    return;
+  }
+  const passCount = results.filter(r => r.passes).length;
+  document.getElementById('match-subtitle').textContent = `${passCount} of ${results.length} pilots qualify for this request`;
+  const sorted = [...results].sort((a,b) => b.passes - a.passes);
+
+  const summary = `<div class="match-request-summary">
+    <div class="req-field"><span class="req-field-label">Aircraft</span><span class="req-field-value" style="font-family:var(--mono)">${esc(req.aircraft)}</span></div>
+    <div class="req-field"><span class="req-field-label">Airport</span><span class="req-field-value" style="font-family:var(--mono)">${esc(req.airport)}</span></div>
+    <div class="req-field"><span class="req-field-label">Date</span><span class="req-field-value">${formatDate(req.date)}</span></div>
+    <div class="req-field"><span class="req-field-label">Qualifying</span><span class="req-field-value">${passCount} / ${results.length} pilots</span></div>
+  </div>`;
+
+  const cards = sorted.map(r => {
+    const inits = r.pilot.full_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+    const c = r.checks;
+    const conn = connectionFor(r.pilot.id);
+    let actions = '';
+    if (r.passes) {
+      if (!conn) actions = `<div class="match-actions"><button class="btn btn-primary" onclick="connectToPilot('${r.pilot.id}')">Connect with pilot →</button></div>`;
+      else if (conn.status === 'pending') actions = `<div class="match-actions"><span class="conn-status" style="color:var(--amber)">⏳ Request sent — awaiting pilot's response</span></div>`;
+      else if (conn.status === 'accepted') actions = `<div class="match-actions"><span class="conn-status" style="color:var(--green)">✓ Pilot accepted — trip confirmed</span></div>`;
+      else if (conn.status === 'declined') actions = `<div class="match-actions"><span class="conn-status" style="color:var(--red)">✗ Pilot declined</span></div>`;
+    }
+    return `<div class="match-result-card">
+      <div class="match-header">
+        <div class="match-pass-bar ${r.passes ? '' : 'fail'}"></div>
+        <div class="pilot-avatar" style="width:38px;height:38px;font-size:13px;flex-shrink:0">${inits}</div>
+        <div><div style="font-size:14px;font-weight:600">${esc(r.pilot.full_name)}</div>
+          <div style="font-size:12px;color:var(--text-2)"><span class="airport-code" style="font-size:11px">${esc(r.pilot.home_airport)}</span> · ${esc(r.pilot.cert_level||'Pilot')} · range ${r.pilot.range_nm||'—'} nm</div></div>
+        <span class="match-verdict ${r.passes ? 'verdict-pass' : 'verdict-fail'}">${r.passes ? '✓ Qualified' : '✗ Does not qualify'}</span>
+      </div>
+      <div class="match-checks">
+        <div class="check-row"><span class="check-icon">${c.rating.pass ? '✅' : '❌'}</span><div><div class="check-label">Aircraft Rating</div><div class="check-reason">${esc(c.rating.reason)}</div></div></div>
+        <div class="check-row"><span class="check-icon">${c.avail.pass ? '✅' : '❌'}</span><div><div class="check-label">Availability</div><div class="check-reason">${esc(c.avail.reason)}</div></div></div>
+        <div class="check-row"><span class="check-icon">${c.range.pass ? '✅' : '❌'}</span><div><div class="check-label">Range</div><div class="check-reason">${esc(c.range.reason)}</div></div></div>
+      </div>${actions}</div>`;
+  }).join('');
+  document.getElementById('match-content').innerHTML = summary + cards;
+}
+
+function clearRequest() {
+  ['req-aircraft','req-airport','req-name','req-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+}
+
+// ════════════════════════════════════════════════════════════
+// INBOX (pilots) — incoming connection requests
+// ════════════════════════════════════════════════════════════
+function renderInbox() {
+  const host = document.getElementById('inbox-content');
+  const mine = state.myConnections.filter(c => c.pilot_id === state.profile.id);
+  if (mine.length === 0) {
+    host.innerHTML = `<div class="empty-state"><div class="empty-icon">🔔</div>
+      <div class="empty-title">No requests yet</div>
+      <div class="empty-sub">When an aircraft owner connects with you for a trip, it'll appear here. Make sure your ratings and availability are set in your Profile.</div></div>`;
+    return;
+  }
+  // need request + owner info; look them up
+  const reqIds = [...new Set(mine.map(c => c.request_id))];
+  Promise.all([
+    sb.from('requests').select('*').in('id', reqIds),
+    sb.from('profiles').select('*').in('id', [...new Set(mine.map(c => c.owner_id))])
+  ]).then(([rq, ow]) => {
+    const reqMap = {}; (rq.data||[]).forEach(r => reqMap[r.id] = r);
+    const ownMap = {}; (ow.data||[]).forEach(o => ownMap[o.id] = o);
+    const order = { pending:0, accepted:1, declined:2 };
+    const sorted = mine.slice().sort((a,b) => order[a.status]-order[b.status]);
+    host.innerHTML = sorted.map(c => {
+      const r = reqMap[c.request_id]; const o = ownMap[c.owner_id];
+      if (!r || !o) return '';
+      const d = new Date(r.trip_date + 'T12:00:00');
+      let statusTag = c.status === 'pending'
+        ? `<span class="tag tag-amber">Pending</span>`
+        : c.status === 'accepted' ? `<span class="tag tag-green">Accepted</span>` : `<span class="tag tag-gray">Declined</span>`;
+      let buttons = c.status === 'pending'
+        ? `<div style="display:flex;gap:10px;margin-top:14px">
+             <button class="btn btn-green" onclick="respondConnection('${c.id}','accepted')">Accept trip</button>
+             <button class="btn btn-ghost-red" onclick="respondConnection('${c.id}','declined')">Decline</button></div>`
+        : '';
+      return `<div class="card" style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div class="trip-date-block"><div class="trip-month">${d.toLocaleString('default',{month:'short'}).toUpperCase()}</div><div class="trip-day">${d.getDate()}</div></div>
+          <div style="flex:1">
+            <div style="font-size:15px;font-weight:600;margin-bottom:4px">${esc(r.trip_name||'Trip')}</div>
+            <div class="trip-meta"><span class="airport-code" style="font-size:11px">${esc(r.airport)}</span>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--text-3)">${esc(r.aircraft)}</span>
+              <span>${formatDate(r.trip_date)}</span></div>
+            <div style="font-size:12px;color:var(--text-2);margin-top:6px">From owner <b>${esc(o.full_name)}</b> · home <span class="airport-code" style="font-size:11px">${esc(o.home_airport)}</span></div>
+            ${r.notes ? `<div style="font-size:12px;color:var(--text-2);margin-top:4px">“${esc(r.notes)}”</div>` : ''}
+          </div>
+          <div>${statusTag}</div>
+        </div>${buttons}</div>`;
+    }).join('');
+  });
+}
+
+async function respondConnection(connId, status) {
+  const { error } = await sb.from('connections').update({ status }).eq('id', connId);
+  if (error) { showToast('Could not update: ' + error.message); return; }
+  // also mark the request fulfilled if accepted
+  showToast(status === 'accepted' ? 'Trip accepted — added to your calendar.' : 'Request declined.');
+  await refreshAll();
+}
+
+// ════════════════════════════════════════════════════════════
+// DASHBOARD (role-aware)
+// ════════════════════════════════════════════════════════════
+function myTrips() {
+  // owner: trips from accepted connections (else their requests); pilot: accepted jobs
+  if (state.profile.role === 'owner') {
+    return state.myRequests.map(r => ({ date: r.trip_date, name: r.trip_name, airport: r.airport, aircraft: r.aircraft }));
+  } else {
+    const accepted = state.myConnections.filter(c => c.pilot_id === state.profile.id && c.status === 'accepted');
+    // request details may not be loaded for pilots; fetch lazily in renderDashboard
+    return accepted;
+  }
+}
+
+async function renderDashboard() {
+  const owner = state.profile.role === 'owner';
+  document.getElementById('dash-sub').textContent = owner ? "Here's a summary of your activity" : "Your flying activity and incoming requests";
+
+  let trips = [];
+  if (owner) {
+    trips = state.myRequests.map(r => ({ date: r.trip_date, name: r.trip_name, airport: r.airport, aircraft: r.aircraft }));
+  } else {
+    const accepted = state.myConnections.filter(c => c.pilot_id === state.profile.id && c.status === 'accepted');
+    if (accepted.length) {
+      const { data } = await sb.from('requests').select('*').in('id', accepted.map(c => c.request_id));
+      trips = (data||[]).map(r => ({ date: r.trip_date, name: r.trip_name, airport: r.airport, aircraft: r.aircraft }));
+    }
+  }
+  state._dashTrips = trips;
+
+  const stats = owner ? [
+    { label: 'My Requests', value: state.myRequests.length, sub: state.myRequests.length ? 'Trips you’ve posted' : 'None yet' },
+    { label: 'Pilots Available', value: state.pilots.length, sub: 'In the live directory' },
+    { label: 'Home Airport', value: state.profile.home_airport, sub: 'Your base', mono: true }
+  ] : [
+    { label: 'Incoming Requests', value: state.myConnections.filter(c=>c.pilot_id===state.profile.id && c.status==='pending').length, sub: 'Awaiting your response' },
+    { label: 'Confirmed Jobs', value: state.myConnections.filter(c=>c.pilot_id===state.profile.id && c.status==='accepted').length, sub: 'Trips you accepted' },
+    { label: 'Home Airport', value: state.profile.home_airport, sub: 'Your base', mono: true }
+  ];
+  document.getElementById('dash-stats').innerHTML = stats.map(s => `
+    <div class="stat-card"><div class="stat-label">${s.label}</div>
+      <div class="stat-value" ${s.mono?'style="font-size:20px;font-family:var(--mono)"':''}>${esc(String(s.value))}</div>
+      <div class="stat-sub">${esc(s.sub)}</div></div>`).join('');
+
+  const container = document.getElementById('trip-list');
+  if (trips.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🛫</div>
+      <div class="empty-title">No trips yet</div>
+      <div class="empty-sub">${owner ? 'Post a pilot request to add your first trip.' : 'Accepted trips will show here once an owner books you.'}</div>
+      ${owner ? `<button class="btn btn-primary" onclick="showPage('request', document.getElementById('nav-request'))">Create your first request</button>` : ''}</div>`;
+    return;
+  }
+  container.innerHTML = `<div style="margin-bottom:8px;font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.7px">Upcoming Trips</div>` +
+    trips.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(t => {
+      const d = new Date(t.date + 'T12:00:00');
+      return `<div class="trip-card">
+        <div class="trip-date-block"><div class="trip-month">${d.toLocaleString('default',{month:'short'}).toUpperCase()}</div><div class="trip-day">${d.getDate()}</div></div>
+        <div class="trip-info"><div class="trip-title">${esc(t.name||'Trip')}</div>
+          <div class="trip-meta"><span class="airport-code" style="font-size:11px">${esc(t.airport)}</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text-3)">${esc(t.aircraft)}</span></div></div></div>`;
+    }).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// CALENDAR
+// ════════════════════════════════════════════════════════════
+function renderCalendar() {
+  const y = state.calYear, m = state.calMonth;
+  document.getElementById('cal-label').textContent = new Date(y, m, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const daysInPrev = new Date(y, m, 0).getDate();
+  const today = new Date().toISOString().slice(0,10);
+  const cells = [];
+  for (let i = firstDay - 1; i >= 0; i--) cells.push({ day: daysInPrev - i, cur: false });
+  for (let d = 1; d <= daysInMonth; d++) cells.push({ day: d, cur: true });
+  const remainder = 42 - cells.length;
+  for (let d = 1; d <= remainder; d++) cells.push({ day: d, cur: false });
+
+  const trips = state._dashTrips || [];
+  const tripDates = {}; trips.forEach(t => { tripDates[t.date] = t; });
+
+  document.getElementById('cal-body').innerHTML = cells.map(c => {
+    const dateStr = c.cur ? `${y}-${String(m+1).padStart(2,'0')}-${String(c.day).padStart(2,'0')}` : null;
+    const isToday = dateStr === today;
+    const trip = dateStr && tripDates[dateStr];
+    return `<div class="cal-cell ${!c.cur ? 'other-month' : ''} ${isToday ? 'today' : ''}">
+      <div class="cal-cell-num">${c.day}</div>
+      ${trip ? `<div class="cal-event" title="${esc(trip.name||'Trip')}">${esc(trip.name||'Trip')}</div>` : ''}</div>`;
+  }).join('');
+}
+function changeMonth(dir) {
+  state.calMonth += dir;
+  if (state.calMonth < 0) { state.calMonth = 11; state.calYear--; }
+  if (state.calMonth > 11) { state.calMonth = 0; state.calYear++; }
+  renderCalendar();
+}
+
+// ════════════════════════════════════════════════════════════
+// PROFILE
+// ════════════════════════════════════════════════════════════
+function populateProfile() {
+  const p = state.profile;
+  document.getElementById('prof-name').textContent = p.full_name;
+  document.getElementById('prof-role').textContent = p.role === 'owner' ? 'Aircraft Owner' : 'Pilot';
+  document.getElementById('prof-airport').innerHTML = `<span class="airport-code">${esc(p.home_airport)}</span>`;
+  document.getElementById('prof-since').textContent = new Date(p.created_at || Date.now()).toLocaleString('default', { month: 'long', year: 'numeric' });
+  if (p.role === 'pilot') {
+    document.getElementById('prof-range-row').style.display = 'flex';
+    document.getElementById('prof-range').textContent = `${p.range_nm} nm`;
+    document.getElementById('prof-avail-row').style.display = 'flex';
+    document.getElementById('prof-avail').textContent = (p.available_from && p.available_to) ? `${formatDate(p.available_from)} – ${formatDate(p.available_to)}` : 'Not set';
+    if ((p.ratings||[]).length) {
+      document.getElementById('prof-ratings-row').style.display = 'flex';
+      document.getElementById('prof-ratings').innerHTML = p.ratings.map(r => `<span class="tag tag-blue" style="font-family:var(--mono);font-size:10px;margin-left:4px">${esc(r)}</span>`).join('');
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// UTILITIES
+// ════════════════════════════════════════════════════════════
+function formatDate(str) {
+  const d = new Date(str + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+function esc(s) { return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(t._timer); t._timer = setTimeout(() => { t.style.display = 'none'; }, 3000);
+}
+</script>
+</body>
+</html>
